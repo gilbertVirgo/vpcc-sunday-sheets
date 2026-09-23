@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@import "./styles/tokens.color.css";
+@import "./styles/tokens.typography.css";
+@import "./styles/tokens.layout.css";
+@import "./styles/tokens.motion.css";
+@import "./styles/base.css";
+@import "./styles/utilities.css";

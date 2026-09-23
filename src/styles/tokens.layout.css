@@ -1,0 +1,80 @@
+/*
+ * Layout tokens — space, breakpoints, containers, shape, elevation, depth
+ * -----------------------------------------------------------------------------
+ * Breakpoints are carried over from the previous site so existing responsive
+ * decisions still hold: 500 / 750 / 1150 / 1350 / 1500.
+ */
+
+@theme {
+	--breakpoint-*: initial;
+	--container-*: initial;
+	--radius-*: initial;
+	--shadow-*: initial;
+
+	/* ---- Space ----------------------------------------------------------- */
+	/* Tailwind's 4px base is kept: space-4 = 1rem. */
+	--spacing: 0.25rem;
+
+	/*
+	 * Vertical rhythm between page sections. Fluid, so a phone doesn't get
+	 * desktop-sized voids.
+	 *
+	 * These are half-gaps, not full ones. A page is a stack of sections and
+	 * each applies its padding top and bottom, so the space a reader actually
+	 * sees between two of them is the sum of both — the value here is doubled
+	 * in the common case. Sized as full gaps, consecutive features sat ~375px
+	 * apart and the page read as disconnected fragments.
+	 *
+	 * Padding rather than a collapsing margin because toned sections
+	 * (CallToAction's sunken and inverse bands) need the space inside their
+	 * own background, not between it and the next one.
+	 */
+	--space-section-sm: clamp(2rem, 1.5rem + 1.5vw, 3rem);
+	--space-section: clamp(2.75rem, 2rem + 2.5vw, 4.5rem);
+	--space-section-lg: clamp(3.5rem, 2.5rem + 3.5vw, 6rem);
+
+	/* Horizontal page gutter. Every Container uses this — nothing else should
+	   set its own left/right page padding. */
+	--space-gutter: clamp(1.25rem, 0.75rem + 2.2vw, 3rem);
+
+	/* ---- Breakpoints ----------------------------------------------------- */
+	--breakpoint-xs: 31.25rem; /*  500px */
+	--breakpoint-sm: 46.875rem; /*  750px */
+	--breakpoint-md: 71.875rem; /* 1150px */
+	--breakpoint-lg: 84.375rem; /* 1350px */
+	--breakpoint-xl: 93.75rem; /* 1500px */
+
+	/* ---- Containers ------------------------------------------------------ */
+	--container-narrow: 34rem; /*  544px — forms, single-column prose */
+	--container-text: 44rem; /*  704px — article measure */
+	--container-default: 78rem; /* 1248px — the standard page frame */
+	--container-wide: 90rem; /* 1440px — near-full-bleed media */
+
+	/* ---- Shape ----------------------------------------------------------- */
+	/* Kept tight. Large radii read soft and friendly; the brief is clean. */
+	--radius-none: 0;
+	--radius-sm: 0.25rem;
+	--radius-md: 0.5rem;
+	--radius-lg: 0.875rem;
+	--radius-pill: 62.4375rem;
+
+	/* ---- Elevation ------------------------------------------------------- */
+	/* Depth is expressed with hairline borders, not shadows. These two exist
+	   only for things that genuinely float above the page. */
+	--shadow-overlay:
+		0 1px 2px oklch(15.94% 0.0233 279.4 / 0.04),
+		0 8px 24px oklch(15.94% 0.0233 279.4 / 0.08);
+	--shadow-popover:
+		0 1px 2px oklch(15.94% 0.0233 279.4 / 0.05),
+		0 16px 48px oklch(15.94% 0.0233 279.4 / 0.12);
+
+	/* ---- Depth ----------------------------------------------------------- */
+	--z-base: 0;
+	--z-raised: 10;
+	--z-sticky: 100;
+	--z-nav: 200;
+	--z-dropdown: 300;
+	--z-overlay: 800;
+	--z-modal: 900;
+	--z-toast: 1000;
+}

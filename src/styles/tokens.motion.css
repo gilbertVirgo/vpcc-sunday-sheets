@@ -1,0 +1,55 @@
+/*
+ * Motion tokens
+ * -----------------------------------------------------------------------------
+ * House rules, enforced by review:
+ *
+ *   1. Only `transform`, `opacity`, `filter` and `color` animate. Animating
+ *      width/height/top/left forces layout on every frame.
+ *   2. Movement is small. A reveal rises 12px, not 60px.
+ *   3. Reduced motion is handled once, in base.css, at the token level. No
+ *      component implements its own matchMedia check.
+ *   4. Nothing loops. Nothing bounces. Nothing overshoots.
+ */
+
+@theme {
+	--ease-*: initial;
+
+	/* ---- Duration -------------------------------------------------------- */
+	--duration-instant: 80ms; /* colour on hover */
+	--duration-fast: 160ms; /* small state changes */
+	--duration-base: 240ms; /* the default */
+	--duration-slow: 400ms; /* reveals, drawers */
+	--duration-slower: 640ms; /* full-page transitions */
+
+	/* ---- Easing ---------------------------------------------------------- */
+	--ease-standard: cubic-bezier(0.2, 0, 0, 1); /* moves in and settles */
+	--ease-entrance: cubic-bezier(0, 0, 0, 1); /* fast start, long settle */
+	--ease-exit: cubic-bezier(0.3, 0, 1, 1); /* accelerates away */
+	--ease-linear: linear;
+
+	/* ---- Reveal ---------------------------------------------------------- */
+	--reveal-distance: 0.75rem; /* 12px */
+	--reveal-stagger: 70ms;
+	--reveal-duration: var(--duration-slow);
+	--reveal-ease: var(--ease-entrance);
+}
+
+/*
+ * Reduced motion — the single kill switch.
+ *
+ * Collapsing durations to ~0 rather than disabling transitions outright keeps
+ * transitionend/animationend handlers firing, so components that wait on them
+ * don't hang. Reveal distance drops to zero so nothing translates.
+ */
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--duration-instant: 0.01ms;
+		--duration-fast: 0.01ms;
+		--duration-base: 0.01ms;
+		--duration-slow: 0.01ms;
+		--duration-slower: 0.01ms;
+		--reveal-distance: 0rem;
+		--reveal-stagger: 0ms;
+		--reveal-duration: 0.01ms;
+	}
+}

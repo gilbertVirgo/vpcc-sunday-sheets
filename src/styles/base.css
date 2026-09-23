@@ -1,0 +1,113 @@
+/*
+ * Base layer — element defaults.
+ *
+ * Kept deliberately thin. Anything that varies by context belongs in a
+ * component, not here.
+ */
+
+@layer base {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	html {
+		-webkit-text-size-adjust: 100%;
+		scroll-behavior: smooth;
+		/* Offset for the sticky nav when jumping to an anchor. */
+		scroll-padding-top: --spacing(24);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		html {
+			scroll-behavior: auto;
+		}
+	}
+
+	body {
+		background-color: var(--color-surface);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+		font-size: var(--text-body);
+		font-weight: var(--font-weight-medium);
+		line-height: 1.65;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		text-rendering: optimizeLegibility;
+		font-synthesis-weight: none;
+		font-synthesis-style: none;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-weight: var(--font-weight-bold);
+		text-wrap: balance;
+	}
+
+	p {
+		text-wrap: pretty;
+	}
+
+	/* Media defaults to block so it never sits on a text baseline. */
+	img,
+	svg,
+	video,
+	canvas,
+	iframe {
+		display: block;
+		max-width: 100%;
+	}
+
+	img,
+	video {
+		height: auto;
+	}
+
+	/* Form controls inherit type rather than falling back to the UA font. */
+	input,
+	button,
+	textarea,
+	select {
+		font: inherit;
+		color: inherit;
+		letter-spacing: inherit;
+	}
+
+	textarea {
+		resize: vertical;
+	}
+
+	/* ---- Focus ----------------------------------------------------------- */
+	/* Visible for keyboard users, invisible for mouse users, always present
+	   for assistive tech. Never remove this without replacing it. */
+	:focus-visible {
+		outline: 2px solid var(--color-focus-ring);
+		outline-offset: 2px;
+		border-radius: var(--radius-sm);
+	}
+
+	:focus:not(:focus-visible) {
+		outline: none;
+	}
+
+	::selection {
+		background-color: var(--color-accent);
+		color: var(--color-accent-contrast);
+	}
+
+	/* Accent fragment. Carries over the two-tone headings from the old site —
+	   "April 3rd: Hot Cross Buns", "Our story (in brief)" — where part of the
+	   line was set apart from the rest.
+
+	   The old site used a second face for this. Here the contrast is weight:
+	   500 against the heading's 700, same family, same size. Nothing to load,
+	   and it stays inside Area Inktrap. */
+	.font-accent {
+		font-weight: var(--font-weight-medium);
+	}
+}

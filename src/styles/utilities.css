@@ -1,0 +1,269 @@
+/*
+ * Custom utilities
+ * -----------------------------------------------------------------------------
+ * Small, composable, and few. If something here starts accumulating variants,
+ * it wants to be a component instead.
+ */
+
+/* Constrain a text column to a comfortable reading measure. */
+@utility measure {
+	max-width: var(--measure);
+}
+
+@utility measure-tight {
+	max-width: var(--measure-tight);
+}
+
+@utility measure-wide {
+	max-width: var(--measure-wide);
+}
+
+/* The page gutter. Applied by Container — nothing else should set page-level
+   horizontal padding. */
+@utility gutter {
+	padding-inline: var(--space-gutter);
+}
+
+/* Vertical rhythm between page sections. */
+@utility section-y {
+	padding-block: var(--space-section);
+}
+
+@utility section-y-sm {
+	padding-block: var(--space-section-sm);
+}
+
+@utility section-y-lg {
+	padding-block: var(--space-section-lg);
+}
+
+/*
+ * A page's opening band: full lead-in above, nothing below.
+ *
+ * Adjacent sections each apply their own padding, so the visible gap between
+ * two is the sum of both. Between a page header and the content it introduces
+ * that reads as a hole — the intro belongs with what follows, not adrift above
+ * it. Leaving the bottom to the next section gives one gap instead of two.
+ */
+@utility section-t-lg {
+	padding-block-start: var(--space-section-lg);
+}
+
+/*
+ * Transition duration
+ * -----------------------------------------------------------------------------
+ * Tailwind v4 has no theme namespace for `duration-*` — it only accepts bare
+ * numbers — so the motion tokens need explicit utilities. Without these,
+ * `duration-fast` would silently emit nothing and every transition would fall
+ * back to the browser default.
+ */
+@utility duration-instant {
+	transition-duration: var(--duration-instant);
+}
+
+@utility duration-fast {
+	transition-duration: var(--duration-fast);
+}
+
+@utility duration-base {
+	transition-duration: var(--duration-base);
+}
+
+@utility duration-slow {
+	transition-duration: var(--duration-slow);
+}
+
+@utility duration-slower {
+	transition-duration: var(--duration-slower);
+}
+
+/* Depth. `--z-*` is likewise not a Tailwind namespace. */
+@utility z-sticky {
+	z-index: var(--z-sticky);
+}
+
+@utility z-nav {
+	z-index: var(--z-nav);
+}
+
+@utility z-dropdown {
+	z-index: var(--z-dropdown);
+}
+
+@utility z-overlay {
+	z-index: var(--z-overlay);
+}
+
+@utility z-modal {
+	z-index: var(--z-modal);
+}
+
+@utility z-toast {
+	z-index: var(--z-toast);
+}
+
+/*
+ * Pulls an element out of view without `display: none`.
+ *
+ * Used for the form honeypot: some bots skip hidden inputs, so the field has
+ * to remain rendered and laid out. It is `aria-hidden` and out of the tab
+ * order at the markup level, so no person encounters it.
+ */
+@utility offscreen {
+	position: absolute;
+	left: -100vw;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+
+/*
+ * reCAPTCHA badge.
+ *
+ * Google permits hiding it only where the attribution text is shown instead —
+ * which the contact form does, next to the submit button.
+ */
+@layer components {
+	.grecaptcha-badge {
+		visibility: hidden;
+	}
+}
+
+/*
+ * Page transition — see src/app/template.tsx.
+ *
+ * `both` holds the from-state before the animation starts, so there is no
+ * single-frame flash of the final position on a slow navigation.
+ */
+@keyframes page-in {
+	from {
+		opacity: 0;
+		translate: 0 0.25rem;
+	}
+	to {
+		opacity: 1;
+		translate: 0 0;
+	}
+}
+
+@utility animate-page-in {
+	animation: page-in var(--duration-base) var(--ease-entrance) both;
+}
+
+/*
+ * Native dialog
+ * -----------------------------------------------------------------------------
+ * `transition-behavior: allow-discrete` plus `@starting-style` lets the
+ * top-layer element animate in and out without JavaScript holding it open for
+ * the duration of an exit transition.
+ */
+@layer components {
+	dialog {
+		opacity: 0;
+		scale: 0.98;
+		transition:
+			opacity var(--duration-base) var(--ease-standard),
+			scale var(--duration-base) var(--ease-standard),
+			display var(--duration-base) allow-discrete,
+			overlay var(--duration-base) allow-discrete;
+	}
+
+	dialog[open] {
+		opacity: 1;
+		scale: 1;
+	}
+
+	@starting-style {
+		dialog[open] {
+			opacity: 0;
+			scale: 0.98;
+		}
+	}
+
+	/*
+	 * Drawer variant — pinned to the right edge, full height, slides in.
+	 *
+	 * Overrides the opacity/scale entrance above rather than composing with
+	 * it: a panel that fades *and* scales *and* slides reads as three separate
+	 * effects fighting each other.
+	 */
+	dialog[data-drawer] {
+		margin: 0 0 0 auto;
+		opacity: 1;
+		scale: 1;
+		translate: 100% 0;
+		transition:
+			translate var(--duration-slow) var(--ease-standard),
+			display var(--duration-slow) allow-discrete,
+			overlay var(--duration-slow) allow-discrete;
+	}
+
+	dialog[data-drawer][open] {
+		translate: 0 0;
+	}
+
+	@starting-style {
+		dialog[data-drawer][open] {
+			translate: 100% 0;
+		}
+	}
+
+	dialog::backdrop {
+		opacity: 0;
+		backdrop-filter: blur(2px);
+		transition:
+			opacity var(--duration-base) var(--ease-standard),
+			display var(--duration-base) allow-discrete,
+			overlay var(--duration-base) allow-discrete;
+	}
+
+	dialog[open]::backdrop {
+		opacity: 1;
+	}
+
+	@starting-style {
+		dialog[open]::backdrop {
+			opacity: 0;
+		}
+	}
+}
+
+/*
+ * Scroll reveal
+ * -----------------------------------------------------------------------------
+ * Driven by the <Reveal> / <Stagger> components, which flip data-reveal-state
+ * once an IntersectionObserver fires.
+ *
+ * The whole block is gated on `@media (scripting: enabled)`. Without
+ * JavaScript nothing can ever flip the state attribute, so the hidden rule
+ * must not apply — otherwise a no-JS visitor, or a crawler that doesn't
+ * execute scripts, gets a blank page. Browsers that don't support the
+ * `scripting` feature simply skip the block and render everything visible,
+ * which fails in the safe direction.
+ *
+ * Doing this in CSS rather than with an inline script that stamps a flag on
+ * <html> also avoids a hydration mismatch on the root element.
+ *
+ * Reduced motion zeroes --reveal-distance and --reveal-duration at the token
+ * layer, so this collapses to a plain instant render with no per-component
+ * media query.
+ */
+@media (scripting: enabled) {
+	@layer components {
+		[data-reveal] {
+			opacity: 0;
+			translate: 0 var(--reveal-distance);
+			transition:
+				opacity var(--reveal-duration) var(--reveal-ease),
+				translate var(--reveal-duration) var(--reveal-ease);
+			transition-delay: calc(
+				var(--reveal-index, 0) * var(--reveal-stagger)
+			);
+		}
+
+		[data-reveal][data-reveal-state="visible"] {
+			opacity: 1;
+			translate: 0 0;
+		}
+	}
+}
