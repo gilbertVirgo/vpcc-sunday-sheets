@@ -31,7 +31,7 @@ export function sectionOrder(song: SheetSong): SheetSection[] {
 
 export function creditLines(song: SheetSong): string[] {
   let credit = song.attribution.trim();
-  if (song.ccli && !credit.includes(song.ccli)) {
+  if (song.ccli && !credit.includes(`#${song.ccli}`)) {
     credit = credit ? `${credit} · CCLI Song #${song.ccli}` : `CCLI Song #${song.ccli}`;
   }
   return credit ? credit.split(/\n+/) : [];

@@ -12,7 +12,7 @@ export default guarded(async (url) => {
   const events = await (await calendarDb())
     .collection<EventDoc>("events")
     .find({
-      visibility: "public",
+      visibility: { $ne: "private" },
       $or: [
         { date: { $gte: start, $lt: end } },
         {

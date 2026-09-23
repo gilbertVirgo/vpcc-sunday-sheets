@@ -119,6 +119,9 @@ describe("creditLines", () => {
     expect(creditLines(s("", "123"))).toEqual(["CCLI Song #123"]);
     expect(creditLines(s(""))).toEqual([]);
   });
+  it("appends CCLI when the number appears without a # prefix", () => {
+    expect(creditLines(s("John Newton, 1779", "1779"))).toEqual(["John Newton, 1779 · CCLI Song #1779"]);
+  });
 });
 
 const fonts = {

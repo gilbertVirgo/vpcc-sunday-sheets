@@ -28,17 +28,18 @@ export function App() {
   useEffect(() => {
     if (!authed || !date) return;
     let stale = false;
+    setError("");
     api<{ found: boolean; songs: SheetSong[] }>(`service?date=${date}`).then(
       (r) => {
         if (stale) return;
         setSongs(r.songs);
         setFound(r.found);
       },
-      (e) => setError(String(e)),
+      (e) => !stale && setError(String(e)),
     );
     api<Notice[]>(`notices?date=${date}`).then(
       (n) => !stale && setNotices(noticesText(n)),
-      (e) => setError(String(e)),
+      (e) => !stale && setError(String(e)),
     );
     return () => {
       stale = true;
@@ -88,7 +89,7 @@ export function App() {
 
         {!fits && (
           <p role="alert" className="rounded-md bg-danger-surface px-3 py-2 text-body-sm text-danger">
-            This doesn't fit even at 7 pt. Remove a song or shorten the notices.
+            Doesn't fit even at 7 pt, so the end of the sheet is cut off. Remove a song or shorten the notices.
           </p>
         )}
       </div>
