@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import type { SheetSong } from "../shared/types";
+import { buildPdf } from "./build";
 import { creditLines, type Item, layoutFlow, layoutSheet, sectionOrder } from "./flow";
 import { FLOW_ORDER, PAD, PANEL_W, panelOrigin } from "./geometry";
 import type { Measure } from "./measure";
@@ -116,4 +119,41 @@ describe("creditLines", () => {
     expect(creditLines(s("", "123"))).toEqual(["CCLI Song #123"]);
     expect(creditLines(s(""))).toEqual([]);
   });
+});
+
+const fonts = {
+  regular: readFileSync(new URL("../../public/fonts/Inter-Regular.ttf", import.meta.url)),
+  bold: readFileSync(new URL("../../public/fonts/Inter-Bold.ttf", import.meta.url)),
+};
+const sheet = (songs: SheetSong[], rotateBack = true, notices: string[] = []) => ({
+  dateISO: "2026-09-20",
+  time: "3:15pm",
+  songs,
+  notices,
+  rotateBack,
+  fonts,
+});
+
+describe("buildPdf", () => {
+  it("(c) shrinks to fit, and reports fits:false at the 7 pt floor", async () => {
+    const many = Array.from({ length: 30 }, (_, i) => song(i + 1, 4, 12));
+    expect((await buildPdf(sheet(many))).fits).toBe(false);
+    expect((await buildPdf(sheet(many.slice(0, 3), true, ["Prayer meeting — Wednesday 7:30pm."]))).fits).toBe(true);
+  }, 30_000);
+
+  it("(d) rotates page 2 by 180° only when asked", async () => {
+    const rotated = await PDFDocument.load((await buildPdf(sheet([song(1, 2, 4)], true))).bytes);
+    expect(rotated.getPage(0).getRotation().angle).toBe(0);
+    expect(rotated.getPage(1).getRotation().angle).toBe(180);
+    const flat = await PDFDocument.load((await buildPdf(sheet([song(1, 2, 4)], false))).bytes);
+    expect(flat.getPage(1).getRotation().angle).toBe(0);
+  }, 30_000);
+
+  it("(e) produces a valid two-page A4 landscape PDF with no songs", async () => {
+    const { bytes, fits } = await buildPdf(sheet([]));
+    const doc = await PDFDocument.load(bytes);
+    expect(fits).toBe(true);
+    expect(doc.getPageCount()).toBe(2);
+    expect(doc.getPage(0).getSize()).toEqual({ width: 841.89, height: 595.28 });
+  }, 30_000);
 });
