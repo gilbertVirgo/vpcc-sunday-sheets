@@ -7,8 +7,9 @@ const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export default guarded(async (url) => {
   const q = (url.searchParams.get("q") ?? "").trim().slice(0, 100);
-  if (!q) return Response.json([]);
   const songs = (await praiseDb()).collection<SongDoc>("songs");
+  // ponytail: empty query returns the whole library for the browse dropdown; paginate if it grows past a few hundred.
+  if (!q) return Response.json((await songs.find({}, { projection: PROJECTION, sort: { title: 1 } }).toArray()).map(fromSongDoc));
 
   let docs = await songs
     .find(
