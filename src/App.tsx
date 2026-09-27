@@ -17,6 +17,7 @@ export function App() {
   const [songs, setSongs] = useState<SheetSong[]>([]);
   const [found, setFound] = useState(true);
   const [notices, setNotices] = useState("");
+  const [quote, setQuote] = useState({ text: "", source: "" });
   const [rotateBack, setRotateBack] = useState(true);
   const [fits, setFits] = useState(true);
   const [error, setError] = useState("");
@@ -50,8 +51,8 @@ export function App() {
     api<Notice[]>(`notices?date=${date}`).then((n) => setNotices(noticesText(n)), (e) => setError(String(e)));
 
   const input = useMemo(
-    () => ({ dateISO: date, time, songs, notices: noticeParagraphs(notices), rotateBack }),
-    [date, time, songs, notices, rotateBack],
+    () => ({ dateISO: date, time, songs, notices: noticeParagraphs(notices), quote, rotateBack }),
+    [date, time, songs, notices, quote, rotateBack],
   );
 
   if (!authed) return <p className="p-8 text-body-sm text-ink-muted">{error || "Checking sign-in…"}</p>;
@@ -72,6 +73,25 @@ export function App() {
             <input value={time} onChange={(e) => setTime(e.target.value)} className={field} />
           </label>
         </div>
+
+        <section className="flex flex-col gap-2">
+          <h2 className="text-body-sm font-bold text-ink">Quote (optional)</h2>
+          <textarea
+            aria-label="Quote text"
+            rows={3}
+            value={quote.text}
+            onChange={(e) => setQuote((q) => ({ ...q, text: e.target.value }))}
+            className={field}
+          />
+          <input
+            aria-label="Quote source"
+            placeholder="Source, e.g. Psalm 46:10"
+            value={quote.source}
+            onChange={(e) => setQuote((q) => ({ ...q, source: e.target.value }))}
+            className={field}
+          />
+          <p className="text-caption text-ink-muted">Printed on the cover, above the songs. Leave blank for none.</p>
+        </section>
 
         <section className="flex flex-col gap-3">
           <h2 className="text-body-sm font-bold text-ink">Songs</h2>

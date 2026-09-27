@@ -81,6 +81,20 @@ describe("(c) overflow drives shrink", () => {
   });
 });
 
+describe("quote", () => {
+  it("prints quote and source at the top of panel A, before the songs", () => {
+    const { items } = layoutFlow([song(1, 1, 2)], 10, m, { text: "Be still", source: "Psalm 46:10" });
+    const texts = items.filter((i) => i.kind === "text");
+    expect(texts[0]).toMatchObject({ panel: "A", text: "“Be still”" });
+    expect(texts[1]).toMatchObject({ panel: "A", text: "— Psalm 46:10", muted: true });
+    expect(panelOf(items, "1. Song 1")).toBe("A");
+  });
+  it("prints nothing for a blank quote", () => {
+    const plain = layoutFlow([song(1, 1, 2)], 10, m);
+    expect(layoutFlow([song(1, 1, 2)], 10, m, { text: "  ", source: "Psalm 1" })).toEqual(plain);
+  });
+});
+
 describe("sectionOrder", () => {
   const base: SheetSong = {
     id: "x",
