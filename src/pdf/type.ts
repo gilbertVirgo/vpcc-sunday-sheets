@@ -26,11 +26,24 @@ export type Face = { pdf: PDFFont; kit: Font };
  */
 export const trackEm = (size: number): number => Math.min(0, -0.0223 + 0.185 * Math.exp(-0.1745 * size) - 0.015);
 
+type Glyph = { s: string; adv: number };
+
+// Shaping is the hot path (fit search re-wraps every line at each size); memo per font, kept across builds.
+// ponytail: unbounded, fine for a session's worth of lyrics; add LRU if memory ever shows up.
+const shapes = new WeakMap<Font, Map<string, Glyph[]>>();
+
 /** Per glyph: the text it came from and its kerned advance in em. */
-function shape(face: Face, text: string): { s: string; adv: number }[] {
-  const { glyphs, positions } = face.kit.layout(text);
-  const em = face.kit.unitsPerEm;
-  return glyphs.map((g, i) => ({ s: String.fromCodePoint(...g.codePoints), adv: positions[i].xAdvance / em }));
+function shape(face: Face, text: string): Glyph[] {
+  let memo = shapes.get(face.kit);
+  if (!memo) shapes.set(face.kit, (memo = new Map()));
+  let out = memo.get(text);
+  if (!out) {
+    const { glyphs, positions } = face.kit.layout(text);
+    const em = face.kit.unitsPerEm;
+    out = glyphs.map((g, i) => ({ s: String.fromCodePoint(...g.codePoints), adv: positions[i].xAdvance / em }));
+    memo.set(text, out);
+  }
+  return out;
 }
 
 /** Rendered width in pt, kerning and tracking included. */
@@ -53,7 +66,7 @@ export function drawText(page: PDFPage, face: Face, text: string, x: number, y: 
   const track = trackEm(size);
   for (const g of shape(face, text)) {
     arr.push(face.pdf.encodeText(g.s));
-    const natural = face.kit.layout(g.s).positions[0]?.xAdvance / face.kit.unitsPerEm || 0;
+    const natural = shape(face, g.s)[0]?.adv || 0;
     const adj = g.adv + track - natural;
     if (adj) arr.push(PDFNumber.of(-adj * 1000));
   }

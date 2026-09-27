@@ -1,4 +1,4 @@
-import fontkit from "@pdf-lib/fontkit";
+import fontkit, { type Font } from "@pdf-lib/fontkit";
 import { PDFDocument, degrees } from "pdf-lib";
 import type { SheetInput } from "../shared/types";
 import { fitScale } from "./fit";
@@ -8,13 +8,17 @@ import type { Measure } from "./measure";
 import { renderSheet } from "./render";
 import { type Face, textWidth } from "./type";
 
+// Same bytes → same fontkit handle, so the shaping memo in type.ts survives between builds.
+const kits = new WeakMap<Uint8Array, Font>();
+const kitFor = (bytes: Uint8Array): Font => kits.get(bytes) ?? kits.set(bytes, fontkit.create(bytes)).get(bytes)!;
+
 /** Pure: bytes in (fonts), bytes out. No DOM, no fetch, so it runs in vitest and the browser alike. */
 export async function buildPdf(input: SheetInput): Promise<{ bytes: Uint8Array; fits: boolean }> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   doc.setTitle(`Sunday Worship ${input.dateISO}`);
   // ponytail: subset:true keeps the file small; flip to false if a glyph renders wrong.
-  const face = async (bytes: Uint8Array): Promise<Face> => ({ pdf: await doc.embedFont(bytes, { subset: true }), kit: fontkit.create(bytes) });
+  const face = async (bytes: Uint8Array): Promise<Face> => ({ pdf: await doc.embedFont(bytes, { subset: true }), kit: kitFor(bytes) });
   const fonts = { regular: await face(input.fonts.regular), bold: await face(input.fonts.bold) };
   const measure: Measure = (t, bold, size) => textWidth(bold ? fonts.bold : fonts.regular, t, size);
 
