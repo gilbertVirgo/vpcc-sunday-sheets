@@ -20,6 +20,9 @@ export type Notice = {
   description: string;
 };
 
+/** Short quote printed at the top of the cover flow, e.g. a Bible verse. Empty text = none. */
+export type Quote = { text: string; source: string };
+
 export type SheetInput = {
   /** YYYY-MM-DD */
   dateISO: string;
@@ -28,6 +31,7 @@ export type SheetInput = {
   songs: SheetSong[];
   /** One paragraph per entry. */
   notices: string[];
+  quote?: Quote;
   rotateBack: boolean;
   /** Inter static TTF bytes. Passed in so buildPdf stays DOM- and fetch-free. */
   fonts: { regular: Uint8Array; bold: Uint8Array };

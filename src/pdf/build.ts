@@ -18,7 +18,7 @@ export async function buildPdf(input: SheetInput): Promise<{ bytes: Uint8Array; 
   const fonts = { regular: await face(input.fonts.regular), bold: await face(input.fonts.bold) };
   const measure: Measure = (t, bold, size) => textWidth(bold ? fonts.bold : fonts.regular, t, size);
 
-  const at = (s: number) => layoutSheet(input.songs, input.notices, s, measure);
+  const at = (s: number) => layoutSheet(input.songs, input.notices, s, measure, input.quote);
   const { size, fits } = fitScale((s) => at(s).overflow);
 
   const pages = [doc.addPage([PAGE_W, PAGE_H]), doc.addPage([PAGE_W, PAGE_H])];

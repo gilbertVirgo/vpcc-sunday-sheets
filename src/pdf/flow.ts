@@ -1,4 +1,4 @@
-import type { SheetSection, SheetSong } from "../shared/types";
+import type { Quote, SheetSection, SheetSong } from "../shared/types";
 import { CONTENT_W, FLOW_ORDER, type PanelId, capacity } from "./geometry";
 import { type Measure, wrap } from "./measure";
 
@@ -79,6 +79,21 @@ function sermonUnit(s: number): Unit {
   return { gap: 1.6 * s, h: head + SERMON_LINES * step, pieces: [text("Sermon notes", 0, BASELINE * head, hs, true), ...rules] };
 }
 
+function quoteUnits(quote: Quote | undefined, s: number, m: Measure): Unit[] {
+  const body = quote?.text.trim();
+  if (!body) return [];
+  const lh = 1.25 * s;
+  const lines = wrap(`“${body}”`, CONTENT_W, (t) => m(t, false, s));
+  const units: Unit[] = [{ gap: 0, h: lines.length * lh, pieces: block(lines, 0, s, lh, 0) }];
+  const source = quote!.source.trim();
+  if (source) {
+    const cs = 0.85 * s;
+    const src = wrap(`— ${source}`, CONTENT_W, (t) => m(t, false, cs));
+    units.push({ gap: 0.3 * s, h: src.length * 1.25 * cs, pieces: block(src, 0, cs, 1.25 * cs, 0, false, true) });
+  }
+  return units;
+}
+
 /** Pour units into panels in order. A unit that does not fit the space left moves to the next panel. */
 function place(units: Unit[], panels: PanelId[]): Layout {
   const items: Item[] = [];
@@ -102,8 +117,8 @@ function place(units: Unit[], panels: PanelId[]): Layout {
   return { items, overflow: false };
 }
 
-export function layoutFlow(songs: SheetSong[], s: number, m: Measure): Layout {
-  const units = [...songs.flatMap((song, i) => songUnits(song, i + 1, s, m)), sermonUnit(s)];
+export function layoutFlow(songs: SheetSong[], s: number, m: Measure, quote?: Quote): Layout {
+  const units = [...quoteUnits(quote, s, m), ...songs.flatMap((song, i) => songUnits(song, i + 1, s, m)), sermonUnit(s)];
   return place(units, FLOW_ORDER);
 }
 
@@ -121,8 +136,8 @@ export function layoutNotices(paragraphs: string[], s: number, m: Measure): Layo
   return place(units, ["back"]);
 }
 
-export function layoutSheet(songs: SheetSong[], notices: string[], s: number, m: Measure): Layout {
-  const flow = layoutFlow(songs, s, m);
+export function layoutSheet(songs: SheetSong[], notices: string[], s: number, m: Measure, quote?: Quote): Layout {
+  const flow = layoutFlow(songs, s, m, quote);
   const back = layoutNotices(notices, s, m);
   return { items: [...flow.items, ...back.items], overflow: flow.overflow || back.overflow };
 }
