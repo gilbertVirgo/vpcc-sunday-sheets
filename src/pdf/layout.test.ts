@@ -32,7 +32,7 @@ describe("(a) panel assignment order", () => {
   });
 
   it("fills panels A, C, B, D, E in turn", () => {
-    const { items, overflow } = layoutFlow([1, 2, 3, 4].map((n) => song(n, 2, 14)), 10, m);
+    const { items, overflow } = layoutFlow([1, 2, 3, 4].map((n) => song(n, 2, 14)), 9.4, m);
     expect(overflow).toBe(false);
     expect([1, 2, 3, 4].map((n) => panelOf(items, `${n}. Song ${n}`))).toEqual(["A", "C", "B", "D"]);
     expect(panelOf(items, "Sermon notes")).toBe("E");
@@ -45,7 +45,7 @@ describe("(b) keep-together rules", () => {
     for (let k = 1; k <= 30; k++) {
       const { items } = layoutFlow([song(1, 1, k), song(2, 3, 10)], 10, m);
       const sermon = items.filter((i) => i.kind === "rule" || i.text === "Sermon notes");
-      expect(sermon).toHaveLength(9);
+      expect(sermon.length).toBeGreaterThanOrEqual(9);
       expect(new Set(sermon.map((i) => i.panel)).size).toBe(1);
     }
   });
@@ -63,6 +63,23 @@ describe("(b) keep-together rules", () => {
     // …while songs themselves do split.
     const song1Panels = new Set(items.filter((i) => i.kind === "text" && i.text.startsWith("L1.")).map((i) => i.panel));
     expect(song1Panels.size).toBeGreaterThan(1);
+  });
+});
+
+describe("sermon notes fill space", () => {
+  it("takes a whole empty panel over the tail of the last song's panel", () => {
+    const { items } = layoutFlow([song(1, 1, 2)], 10, m);
+    expect(panelOf(items, "Sermon notes")).toBe("C");
+    const rules = items.filter((i) => i.kind === "rule");
+    expect(rules.length).toBeGreaterThan(8);
+    expect(Math.max(...rules.map((r) => r.y))).toBeGreaterThan(500);
+  });
+  it("fills the tail of the last panel when no panel is empty", () => {
+    const { items, overflow } = layoutFlow([1, 2, 3, 4, 5, 6].map((n) => song(n, 2, 10)), 10, m);
+    expect(overflow).toBe(false);
+    expect(items.some((i) => i.panel === "E" && i.kind === "text" && i.text.startsWith("L6."))).toBe(true);
+    expect(panelOf(items, "Sermon notes")).toBe("E");
+    expect(items.filter((i) => i.kind === "rule").length).toBeGreaterThanOrEqual(8);
   });
 });
 

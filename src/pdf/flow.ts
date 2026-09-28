@@ -12,6 +12,7 @@ type Piece = Omit<TextItem, "panel"> | Omit<RuleItem, "panel">;
 /** An unbreakable block. `gap` is dropped at the top of a panel. */
 type Unit = { h: number; gap: number; pieces: Piece[]; keepWithNext?: boolean };
 
+/** Minimum rules; the block grows to fill the largest free space after the songs. */
 export const SERMON_LINES = 8;
 const BASELINE = 0.8; // baseline sits 80% down a line box
 
@@ -69,14 +70,16 @@ function songUnits(song: SheetSong, n: number, s: number, m: Measure): Unit[] {
   return units;
 }
 
-function sermonUnit(s: number): Unit {
+function sermonUnit(s: number, space: number): Unit | undefined {
   const hs = 1.3 * s;
   const head = 1.25 * hs;
   const step = 2.5 * s;
-  const rules: Piece[] = Array.from({ length: SERMON_LINES }, (_, i) => ({
+  const n = Math.floor((space - head) / step);
+  if (n < SERMON_LINES) return undefined;
+  const rules: Piece[] = Array.from({ length: n }, (_, i) => ({
     kind: "rule", x: 0, y: head + (i + 1) * step, w: CONTENT_W,
   }));
-  return { gap: 1.6 * s, h: head + SERMON_LINES * step, pieces: [text("Sermon notes", 0, BASELINE * head, hs, true), ...rules] };
+  return { gap: 1.6 * s, h: head + n * step, pieces: [text("Sermon notes", 0, BASELINE * head, hs, true), ...rules] };
 }
 
 function quoteUnits(quote: Quote | undefined, s: number, m: Measure): Unit[] {
@@ -95,7 +98,7 @@ function quoteUnits(quote: Quote | undefined, s: number, m: Measure): Unit[] {
 }
 
 /** Pour units into panels in order. A unit that does not fit the space left moves to the next panel. */
-function place(units: Unit[], panels: PanelId[]): Layout {
+function place(units: Unit[], panels: PanelId[]): Layout & { p: number; used: number } {
   const items: Item[] = [];
   let p = 0;
   let used = 0;
@@ -107,19 +110,33 @@ function place(units: Unit[], panels: PanelId[]): Layout {
       p++;
       used = 0;
     }
-    if (p >= panels.length) return { items, overflow: true };
+    if (p >= panels.length) return { items, overflow: true, p, used };
     const { top, cap } = capacity(panels[p]);
     const y = used ? used + u.gap : 0;
     for (const piece of u.pieces) items.push({ ...piece, panel: panels[p], y: top + y + piece.y } as Item);
     used = y + u.h;
-    if (used > cap) return { items, overflow: true }; // taller than an empty panel
+    if (used > cap) return { items, overflow: true, p, used }; // taller than an empty panel
   }
-  return { items, overflow: false };
+  return { items, overflow: false, p, used };
 }
 
 export function layoutFlow(songs: SheetSong[], s: number, m: Measure, quote?: Quote): Layout {
-  const units = [...quoteUnits(quote, s, m), ...songs.flatMap((song, i) => songUnits(song, i + 1, s, m)), sermonUnit(s)];
-  return place(units, FLOW_ORDER);
+  const units = [...quoteUnits(quote, s, m), ...songs.flatMap((song, i) => songUnits(song, i + 1, s, m))];
+  const { items, overflow, p, used } = place(units, FLOW_ORDER);
+  if (overflow) return { items, overflow };
+  // Sermon notes take the largest free space from the last song onward (the tail of its panel or a later empty panel).
+  const gap = used ? 1.6 * s : 0;
+  let best = { i: p, top: used + gap, space: capacity(FLOW_ORDER[p]).cap - used - gap };
+  for (let i = p + 1; i < FLOW_ORDER.length; i++) {
+    const space = capacity(FLOW_ORDER[i]).cap;
+    if (space > best.space) best = { i, top: 0, space };
+  }
+  const notes = sermonUnit(s, best.space);
+  if (!notes) return { items, overflow: true };
+  const panel = FLOW_ORDER[best.i];
+  const top = capacity(panel).top + best.top;
+  for (const piece of notes.pieces) items.push({ ...piece, panel, y: top + piece.y } as Item);
+  return { items, overflow: false };
 }
 
 export function layoutNotices(paragraphs: string[], s: number, m: Measure): Layout {
