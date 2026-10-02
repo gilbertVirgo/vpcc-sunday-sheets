@@ -159,12 +159,11 @@ const fonts = {
   regular: readFileSync(new URL("../../public/fonts/Inter-Regular.ttf", import.meta.url)),
   bold: readFileSync(new URL("../../public/fonts/Inter-Bold.ttf", import.meta.url)),
 };
-const sheet = (songs: SheetSong[], rotateBack = true, notices: string[] = []) => ({
+const sheet = (songs: SheetSong[], notices: string[] = []) => ({
   dateISO: "2026-09-20",
   time: "3:15pm",
   songs,
   notices,
-  rotateBack,
   fonts,
 });
 
@@ -172,15 +171,12 @@ describe("buildPdf", () => {
   it("(c) shrinks to fit, and reports fits:false at the 7 pt floor", async () => {
     const many = Array.from({ length: 30 }, (_, i) => song(i + 1, 4, 12));
     expect((await buildPdf(sheet(many))).fits).toBe(false);
-    expect((await buildPdf(sheet(many.slice(0, 3), true, ["Prayer meeting — Wednesday 7:30pm."]))).fits).toBe(true);
+    expect((await buildPdf(sheet(many.slice(0, 3), ["Prayer meeting — Wednesday 7:30pm."]))).fits).toBe(true);
   }, 30_000);
 
-  it("(d) rotates page 2 by 180° only when asked", async () => {
-    const rotated = await PDFDocument.load((await buildPdf(sheet([song(1, 2, 4)], true))).bytes);
-    expect(rotated.getPage(0).getRotation().angle).toBe(0);
-    expect(rotated.getPage(1).getRotation().angle).toBe(180);
-    const flat = await PDFDocument.load((await buildPdf(sheet([song(1, 2, 4)], false))).bytes);
-    expect(flat.getPage(1).getRotation().angle).toBe(0);
+  it("(d) leaves both pages unrotated", async () => {
+    const doc = await PDFDocument.load((await buildPdf(sheet([song(1, 2, 4)]))).bytes);
+    expect(doc.getPages().map((p) => p.getRotation().angle)).toEqual([0, 0]);
   }, 30_000);
 
   it("(e) produces a valid two-page A4 landscape PDF with no songs", async () => {
