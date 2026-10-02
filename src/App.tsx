@@ -18,7 +18,6 @@ export function App() {
   const [found, setFound] = useState(true);
   const [notices, setNotices] = useState("");
   const [quote, setQuote] = useState({ text: "", source: "" });
-  const [rotateBack, setRotateBack] = useState(true);
   const [fits, setFits] = useState(true);
   const [error, setError] = useState("");
 
@@ -51,8 +50,8 @@ export function App() {
     api<Notice[]>(`notices?date=${date}`).then((n) => setNotices(noticesText(n)), (e) => setError(String(e)));
 
   const input = useMemo(
-    () => ({ dateISO: date, time, songs, notices: noticeParagraphs(notices), quote, rotateBack }),
-    [date, time, songs, notices, quote, rotateBack],
+    () => ({ dateISO: date, time, songs, notices: noticeParagraphs(notices), quote }),
+    [date, time, songs, notices, quote],
   );
 
   if (!authed) return <p className="p-8 text-body-sm text-ink-muted">{error || "Checking sign-in…"}</p>;
@@ -101,11 +100,6 @@ export function App() {
         </section>
 
         <NoticesEditor value={notices} onChange={setNotices} onReload={reloadNotices} />
-
-        <label className="flex items-center gap-2 text-body-sm text-ink">
-          <input type="checkbox" checked={rotateBack} onChange={(e) => setRotateBack(e.target.checked)} />
-          Rotate back page for duplex
-        </label>
 
         {!fits && (
           <p role="alert" className="rounded-md bg-danger-surface px-3 py-2 text-body-sm text-danger">

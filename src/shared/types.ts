@@ -32,7 +32,6 @@ export type SheetInput = {
   /** One paragraph per entry. */
   notices: string[];
   quote?: Quote;
-  rotateBack: boolean;
   /** Inter static TTF bytes. Passed in so buildPdf stays DOM- and fetch-free. */
   fonts: { regular: Uint8Array; bold: Uint8Array };
 };

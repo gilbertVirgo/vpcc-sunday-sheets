@@ -1,5 +1,5 @@
 import fontkit, { type Font } from "@pdf-lib/fontkit";
-import { PDFDocument, degrees } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 import type { SheetInput } from "../shared/types";
 import { fitScale } from "./fit";
 import { layoutSheet } from "./flow";
@@ -27,7 +27,6 @@ export async function buildPdf(input: SheetInput): Promise<{ bytes: Uint8Array; 
 
   const pages = [doc.addPage([PAGE_W, PAGE_H]), doc.addPage([PAGE_W, PAGE_H])];
   renderSheet(pages, fonts, at(size).items, input);
-  if (input.rotateBack) pages[1].setRotation(degrees(180));
 
   return { bytes: await doc.save(), fits };
 }
