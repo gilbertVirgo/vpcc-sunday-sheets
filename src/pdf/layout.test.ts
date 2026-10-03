@@ -174,9 +174,11 @@ describe("buildPdf", () => {
     expect((await buildPdf(sheet(many.slice(0, 3), ["Prayer meeting — Wednesday 7:30pm."]))).fits).toBe(true);
   }, 30_000);
 
-  it("(d) leaves both pages unrotated", async () => {
-    const doc = await PDFDocument.load((await buildPdf(sheet([song(1, 2, 4)]))).bytes);
-    expect(doc.getPages().map((p) => p.getRotation().angle)).toEqual([0, 0]);
+  it("(d) rotates page 2 by 180° in the print copy only", async () => {
+    const { bytes, printBytes } = await buildPdf(sheet([song(1, 2, 4)]));
+    const angles = async (b: Uint8Array) => (await PDFDocument.load(b)).getPages().map((p) => p.getRotation().angle);
+    expect(await angles(bytes)).toEqual([0, 0]);
+    expect(await angles(printBytes)).toEqual([0, 180]);
   }, 30_000);
 
   it("(e) produces a valid two-page A4 landscape PDF with no songs", async () => {
