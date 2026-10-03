@@ -98,7 +98,7 @@ function quoteUnits(quote: Quote | undefined, s: number, m: Measure): Unit[] {
 }
 
 /** Pour units into panels in order. A unit that does not fit the space left moves to the next panel. */
-function place(units: Unit[], panels: PanelId[]): Layout & { p: number; used: number } {
+function place(units: Unit[], panels: PanelId[], capOf = capacity): Layout & { p: number; used: number } {
   const items: Item[] = [];
   let p = 0;
   let used = 0;
@@ -106,12 +106,12 @@ function place(units: Unit[], panels: PanelId[]): Layout & { p: number; used: nu
     const u = units[i];
     const next = u.keepWithNext ? units[i + 1] : undefined;
     const need = (used ? u.gap : 0) + u.h + (next ? next.gap + next.h : 0);
-    if (used && used + need > capacity(panels[p]).cap) {
+    if (used && used + need > capOf(panels[p]).cap) {
       p++;
       used = 0;
     }
     if (p >= panels.length) return { items, overflow: true, p, used };
-    const { top, cap } = capacity(panels[p]);
+    const { top, cap } = capOf(panels[p]);
     const y = used ? used + u.gap : 0;
     for (const piece of u.pieces) items.push({ ...piece, panel: panels[p], y: top + y + piece.y } as Item);
     used = y + u.h;
@@ -120,27 +120,31 @@ function place(units: Unit[], panels: PanelId[]): Layout & { p: number; used: nu
   return { items, overflow: false, p, used };
 }
 
-export function layoutFlow(songs: SheetSong[], s: number, m: Measure, quote?: Quote): Layout {
+/** `backUsed`: height the notices already take on the back panel; the flow's last panel is what is left under them. */
+export function layoutFlow(songs: SheetSong[], s: number, m: Measure, quote?: Quote, backUsed = 0): Layout {
   const units = [...quoteUnits(quote, s, m), ...songs.flatMap((song, i) => songUnits(song, i + 1, s, m))];
-  const { items, overflow, p, used } = place(units, FLOW_ORDER);
+  const panels: PanelId[] = [...FLOW_ORDER, "back"];
+  const backTop = backUsed ? backUsed + 1.6 * s : 0;
+  const capOf = (id: PanelId) => (id === "back" ? { top: backTop, cap: capacity(id).cap - backTop } : capacity(id));
+  const { items, overflow, p, used } = place(units, panels, capOf);
   if (overflow) return { items, overflow };
   // Sermon notes take the largest free space from the last song onward (the tail of its panel or a later empty panel).
   const gap = used ? 1.6 * s : 0;
-  let best = { i: p, top: used + gap, space: capacity(FLOW_ORDER[p]).cap - used - gap };
-  for (let i = p + 1; i < FLOW_ORDER.length; i++) {
-    const space = capacity(FLOW_ORDER[i]).cap;
+  let best = { i: p, top: used + gap, space: capOf(panels[p]).cap - used - gap };
+  for (let i = p + 1; i < panels.length; i++) {
+    const space = capOf(panels[i]).cap;
     if (space > best.space) best = { i, top: 0, space };
   }
   const notes = sermonUnit(s, best.space);
   if (!notes) return { items, overflow: true };
-  const panel = FLOW_ORDER[best.i];
-  const top = capacity(panel).top + best.top;
+  const panel = panels[best.i];
+  const top = capOf(panel).top + best.top;
   for (const piece of notes.pieces) items.push({ ...piece, panel, y: top + piece.y } as Item);
   return { items, overflow: false };
 }
 
-export function layoutNotices(paragraphs: string[], s: number, m: Measure): Layout {
-  if (!paragraphs.length) return { items: [], overflow: false };
+export function layoutNotices(paragraphs: string[], s: number, m: Measure): Layout & { used: number } {
+  if (!paragraphs.length) return { items: [], overflow: false, used: 0 };
   const lh = 1.25 * s;
   const hs = 1.3 * s;
   const units: Unit[] = [
@@ -154,7 +158,7 @@ export function layoutNotices(paragraphs: string[], s: number, m: Measure): Layo
 }
 
 export function layoutSheet(songs: SheetSong[], notices: string[], s: number, m: Measure, quote?: Quote): Layout {
-  const flow = layoutFlow(songs, s, m, quote);
   const back = layoutNotices(notices, s, m);
+  const flow = layoutFlow(songs, s, m, quote, back.used);
   return { items: [...flow.items, ...back.items], overflow: flow.overflow || back.overflow };
 }

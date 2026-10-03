@@ -1,12 +1,13 @@
 import { addDays, londonMidnight } from "../../src/shared/dates";
 import { badRequest, dateParam, guarded } from "./_shared/http";
-import { praiseDb } from "./_shared/mongo";
+import { praiseDb, praiseOwnerId } from "./_shared/mongo";
 import { fromBlock, type SongBlockDoc, type SongDoc } from "./_shared/sheet-song";
 
 type ServiceDoc = {
   _id: string;
   date?: Date | number;
   blocks: Array<{ kind: string }>;
+  ownerId: string;
   updatedAt: Date;
   deletedAt?: Date | null;
 };
@@ -21,6 +22,7 @@ export default guarded(async (url) => {
   // `date` is a BSON Date today; older writers may have stored epoch ms. Match either.
   const service = await db.collection<ServiceDoc>("services").findOne(
     {
+      ownerId: await praiseOwnerId(),
       deletedAt: null,
       $or: [
         { date: { $gte: start, $lt: end } },

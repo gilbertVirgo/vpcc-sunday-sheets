@@ -14,6 +14,7 @@ export type SongBlockDoc = {
 /** A praise-pres `songs` document (fields we read). */
 export type SongDoc = {
   _id: string;
+  ownerId: string | null;
   title: string;
   sections: SheetSection[];
   defaultSequence: string[];
