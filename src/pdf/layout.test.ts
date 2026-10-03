@@ -74,18 +74,29 @@ describe("sermon notes fill space", () => {
     expect(rules.length).toBeGreaterThan(8);
     expect(Math.max(...rules.map((r) => r.y))).toBeGreaterThan(500);
   });
-  it("fills the tail of the last panel when no panel is empty", () => {
-    const { items, overflow } = layoutFlow([1, 2, 3, 4, 5, 6].map((n) => song(n, 2, 10)), 10, m);
+  const six = [1, 2, 3, 4, 5, 6].map((n) => song(n, 2, 10));
+  it("fills the tail of the last song's panel when nothing later is bigger", () => {
+    const { items, overflow } = layoutFlow(six, 10, m, undefined, 300);
     expect(overflow).toBe(false);
     expect(items.some((i) => i.panel === "E" && i.kind === "text" && i.text.startsWith("L6."))).toBe(true);
     expect(panelOf(items, "Sermon notes")).toBe("E");
     expect(items.filter((i) => i.kind === "rule").length).toBeGreaterThanOrEqual(8);
   });
+  it("uses the space under the notices on the back panel", () => {
+    const notes = layoutSheet([...six.slice(0, 5), song(6, 2, 14)], ["Prayer — Sunday 10am."], 10, m).items;
+    expect(panelOf(notes, "Sermon notes")).toBe("back");
+    const noticeY = notes.find((i) => i.kind === "text" && i.text.startsWith("Prayer"))!.y;
+    expect(notes.find((i) => i.kind === "text" && i.text === "Sermon notes")!.y).toBeGreaterThan(noticeY);
+
+    const spill = layoutSheet([...six, song(7, 2, 14), song(8, 1, 6)], ["Prayer — Sunday 10am."], 10, m);
+    expect(spill.overflow).toBe(false);
+    expect(spill.items.some((i) => i.panel === "back" && i.kind === "text" && i.text.startsWith("L8."))).toBe(true);
+  });
 });
 
 describe("(c) overflow drives shrink", () => {
   it("overflows at 10 pt but fits at 7 pt", () => {
-    const songs = [1, 2, 3, 4, 5].map((n) => song(n, 2, 14));
+    const songs = [1, 2, 3, 4, 5, 6, 7].map((n) => song(n, 2, 14));
     expect(layoutSheet(songs, [], 10, m).overflow).toBe(true);
     expect(layoutSheet(songs, [], 7, m).overflow).toBe(false);
   });
