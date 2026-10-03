@@ -1,5 +1,5 @@
 import fontkit, { type Font } from "@pdf-lib/fontkit";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, degrees } from "pdf-lib";
 import type { SheetInput } from "../shared/types";
 import { fitScale } from "./fit";
 import { layoutSheet } from "./flow";
@@ -13,7 +13,7 @@ const kits = new WeakMap<Uint8Array, Font>();
 const kitFor = (bytes: Uint8Array): Font => kits.get(bytes) ?? kits.set(bytes, fontkit.create(bytes)).get(bytes)!;
 
 /** Pure: bytes in (fonts), bytes out. No DOM, no fetch, so it runs in vitest and the browser alike. */
-export async function buildPdf(input: SheetInput): Promise<{ bytes: Uint8Array; fits: boolean }> {
+export async function buildPdf(input: SheetInput): Promise<{ bytes: Uint8Array; printBytes: Uint8Array; fits: boolean }> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   doc.setTitle(`Sunday Worship ${input.dateISO}`);
@@ -28,5 +28,9 @@ export async function buildPdf(input: SheetInput): Promise<{ bytes: Uint8Array; 
   const pages = [doc.addPage([PAGE_W, PAGE_H]), doc.addPage([PAGE_W, PAGE_H])];
   renderSheet(pages, fonts, at(size).items, input);
 
-  return { bytes: await doc.save(), fits };
+  // Preview stays upright; the download has the back page turned 180° for long-edge duplex.
+  const bytes = await doc.save();
+  pages[1].setRotation(degrees(180));
+
+  return { bytes, printBytes: await doc.save(), fits };
 }
